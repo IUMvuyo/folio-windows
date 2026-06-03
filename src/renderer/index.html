@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-theme="day">
+<head>
+  <meta charset="utf-8" />
+  <!-- CSP: no remote anything. Local scripts/styles only, plus data/blob images
+       for rendered pages. This is the privacy guarantee, enforced in the page. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; object-src 'none';" />
+  <title>Folio — Private Edition</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Masthead -->
+    <header class="masthead">
+      <div class="rule-double"><span></span><span></span></div>
+      <div class="masthead-row">
+        <span class="masthead-stamp">est. 2026</span>
+        <span class="masthead-stamp">private edition</span>
+      </div>
+      <div class="masthead-name">Folio</div>
+      <div class="masthead-sub">nothing leaves this device</div>
+      <div class="topbar">
+        <div class="left">
+          <span class="offline"><span class="dot"></span>offline · no network</span>
+        </div>
+        <button class="theme-toggle" id="themeToggle">night edition</button>
+      </div>
+      <div class="rule-double"><span></span><span></span></div>
+    </header>
+
+    <!-- Desk grid -->
+    <main class="content" id="deskRoot"></main>
+  </div>
+
+  <!-- Tool panel (broadsheet) -->
+  <div class="scrim" id="scrim">
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <!-- First-run welcome -->
+  <div class="welcome-scrim" id="welcome" style="display:none">
+    <div class="welcome">
+      <div class="w-name">Folio</div>
+      <div class="w-sub">private edition</div>
+      <p class="w-body"><b>100% free.</b> Every PDF tool, <b>100% on your device.</b></p>
+      <p class="w-note">No account. No cloud. No telemetry. Not a single byte leaves
+        this machine — the offline badge in the masthead never goes away.</p>
+      <button class="btn primary" id="welcomeStart">Enter the pressroom</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

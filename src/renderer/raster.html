@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self' 'unsafe-inline' file:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline';" />
+  <title>Folio Raster</title>
+</head>
+<body>
+<script type="module">
+  // Local pdf.js only. No network — the main process blocks it anyway.
+  const { pdfUrl, workerUrl } = window.__folioRaster;
+  const pdfjs = await import(pdfUrl);
+  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+
+  function b64ToBytes(b64) {
+    const bin = atob(b64);
+    const len = bin.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  // Render selected pages of a PDF (base64) and return RGBA pixel buffers.
+  window.__rasterize = async (b64, opts = {}) => {
+    const { scale = 2, pages = null } = opts;
+    const data = b64ToBytes(b64);
+    const doc = await pdfjs.getDocument({ data, isEvalSupported: false }).promise;
+    const want = pages && pages.length
+      ? pages.map((p) => p + 1).filter((n) => n >= 1 && n <= doc.numPages)
+      : Array.from({ length: doc.numPages }, (_, i) => i + 1);
+
+    const out = [];
+    for (const pageNum of want) {
+      const page = await doc.getPage(pageNum);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      // Paint white so transparent PDFs flatten to a printable page.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      // RGBA bytes → base64 (chunked to avoid call-stack limits).
+      let bin = '';
+      const u8 = new Uint8Array(img.data.buffer);
+      const CHUNK = 0x8000;
+      for (let i = 0; i < u8.length; i += CHUNK) {
+        bin += String.fromCharCode.apply(null, u8.subarray(i, i + CHUNK));
+      }
+      out.push({
+        index: pageNum - 1,
+        width: canvas.width,
+        height: canvas.height,
+        rgbaBase64: btoa(bin),
+      });
+    }
+    await doc.destroy();
+    return out;
+  };
+
+  window.__folioRasterReady = true;
+</script>
+</body>
+</html>
