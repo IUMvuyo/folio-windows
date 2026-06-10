@@ -8,6 +8,8 @@ const pdfEngine = require('../engine/pdfEngine');
 const renderEngine = require('../engine/renderEngine');
 const ocrEngine = require('../engine/ocrEngine');
 const officeEngine = require('../engine/officeEngine');
+const xmlEngine = require('../engine/xmlEngine');
+const xpsEngine = require('../engine/xpsEngine');
 
 // ── Privacy enforcement ──────────────────────────────────────────────────────
 // Folio's whole promise is "nothing leaves this device." We HARD-BLOCK every
@@ -149,6 +151,8 @@ async function pickDir() {
 
 const PDF_FILTER = [{ name: 'PDF', extensions: ['pdf'] }];
 const IMG_FILTER = [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg'] }];
+const XML_FILTER = [{ name: 'XML', extensions: ['xml'] }];
+const XPS_FILTER = [{ name: 'XPS', extensions: ['xps', 'oxps'] }];
 
 function toBuf(x) {
   if (Buffer.isBuffer(x)) return x;
@@ -170,6 +174,8 @@ ipcMain.handle('dlg:openOffice', (_e, kind) => {
   };
   return pickOpen({ multi: false, filters: map[kind] || [{ name: 'All', extensions: ['*'] }] });
 });
+ipcMain.handle('dlg:openXml', () => pickOpen({ multi: false, filters: XML_FILTER }));
+ipcMain.handle('dlg:openXps', () => pickOpen({ multi: false, filters: XPS_FILTER }));
 ipcMain.handle('dlg:openAny', () => pickOpen({ multi: false }));
 
 ipcMain.handle('save:bytes', async (_e, { bytes, defaultName, kind }) => {
@@ -181,6 +187,8 @@ ipcMain.handle('save:bytes', async (_e, { bytes, defaultName, kind }) => {
     docx: [{ name: 'Word', extensions: ['docx'] }],
     xlsx: [{ name: 'Excel', extensions: ['xlsx'] }],
     pptx: [{ name: 'PowerPoint', extensions: ['pptx'] }],
+    xml: XML_FILTER,
+    xps: XPS_FILTER,
   }[kind] || [{ name: 'File', extensions: ['*'] }];
   const fp = await pickSave(defaultName, filters);
   if (!fp) return { saved: false };
@@ -333,6 +341,21 @@ ipcMain.handle('conv:excelToPdf', async (_e, bytes) => {
 });
 // PowerPoint → PDF: pptx parsing to layout is out of scope for pure-JS fidelity;
 // the renderer marks this "coming soon" rather than faking it.
+
+// ── IPC: Convert (XML / XPS) — shared xmlEngine + xpsEngine ──────────────────
+
+ipcMain.handle('conv:xmlToPdf', async (_e, bytes) => xmlEngine.xmlToPdf(toBuf(bytes)));
+ipcMain.handle('conv:pdfToXml', async (_e, bytes) => xmlEngine.pdfToXml(toBuf(bytes)));
+ipcMain.handle('conv:viewXml', async (_e, bytes) => xmlEngine.viewXml(toBuf(bytes)));
+
+ipcMain.handle('conv:pdfToXps', async (e, { bytes, scale }) =>
+  xpsEngine.pdfToXps(
+    toBuf(bytes),
+    (b, o) => rasterizePages(b, { scale: (o && o.scale) || scale || 2, format: 'png' }),
+    { scale: scale || 2 }
+  ));
+ipcMain.handle('conv:xpsToPdf', async (_e, bytes) => xpsEngine.xpsToPdf(toBuf(bytes)));
+ipcMain.handle('conv:viewXps', async (_e, bytes) => xpsEngine.xpsToPdf(toBuf(bytes)));
 
 ipcMain.handle('app:meta', () => ({
   version: app.getVersion(),

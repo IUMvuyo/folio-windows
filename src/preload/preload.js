@@ -11,6 +11,8 @@ const folio = {
   openPdf: (multi = false) => ipcRenderer.invoke('dlg:openPdf', multi),
   openImages: () => ipcRenderer.invoke('dlg:openImages'),
   openOffice: (kind) => ipcRenderer.invoke('dlg:openOffice', kind),
+  openXml: () => ipcRenderer.invoke('dlg:openXml'),
+  openXps: () => ipcRenderer.invoke('dlg:openXps'),
   openAny: () => ipcRenderer.invoke('dlg:openAny'),
   saveBytes: (bytes, defaultName, kind) =>
     ipcRenderer.invoke('save:bytes', { bytes, defaultName, kind }),
@@ -61,6 +63,14 @@ const folio = {
   pdfToPpt: (bytes) => ipcRenderer.invoke('conv:pdfToPpt', bytes),
   wordToPdf: (bytes) => ipcRenderer.invoke('conv:wordToPdf', bytes),
   excelToPdf: (bytes) => ipcRenderer.invoke('conv:excelToPdf', bytes),
+
+  // ── convert — XML / XPS ──────────────────────────────────────────────────
+  xmlToPdf: (bytes) => ipcRenderer.invoke('conv:xmlToPdf', bytes),
+  pdfToXml: (bytes) => ipcRenderer.invoke('conv:pdfToXml', bytes),
+  viewXml: (bytes) => ipcRenderer.invoke('conv:viewXml', bytes),
+  pdfToXps: (bytes, scale = 2) => ipcRenderer.invoke('conv:pdfToXps', { bytes, scale }),
+  xpsToPdf: (bytes) => ipcRenderer.invoke('conv:xpsToPdf', bytes),
+  viewXps: (bytes) => ipcRenderer.invoke('conv:viewXps', bytes),
 
   // ── meta ───────────────────────────────────────────────────────────────
   meta: () => ipcRenderer.invoke('app:meta'),
